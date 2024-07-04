@@ -44,7 +44,7 @@ from src.tryon_pipeline import StableDiffusionXLInpaintPipeline as TryonPipeline
 
 
 logger = get_logger(__name__, log_level="INFO")
-
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 
 def parse_args():
@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42,)
     parser.add_argument("--test_batch_size", type=int, default=2,)
     parser.add_argument("--guidance_scale",type=float,default=2.0,)
-    parser.add_argument("--mixed_precision",type=str,default=None,choices=["no", "fp16", "bf16"],)
+    parser.add_argument("--mixed_precision",type=str,default="fp16",choices=["no", "fp16", "bf16"],)
     parser.add_argument("--enable_xformers_memory_efficient_attention", action="store_true", help="Whether or not to use xformers.")
     args = parser.parse_args()
 
@@ -81,7 +81,7 @@ class VitonHDTestDataset(data.Dataset):
         size: Tuple[int, int] = (512, 384),
     ):
         super(VitonHDTestDataset, self).__init__()
-        self.dataroot = dataroot_path
+        self.dataroot = os.getcwd()
         self.phase = phase
         self.height = size[0]
         self.width = size[1]
@@ -94,9 +94,7 @@ class VitonHDTestDataset(data.Dataset):
         )
         self.toTensor = transforms.ToTensor()
 
-        with open(
-            os.path.join(dataroot_path, phase, "vitonhd_" + phase + "_tagged.json"), "r"
-        ) as file1:
+        with open(os.path.join(self.dataroot, phase, f"vitonhd_{phase}_tagged.json"), "r") as file1:
             data1 = json.load(file1)
 
         annotation_list = [
@@ -128,9 +126,9 @@ class VitonHDTestDataset(data.Dataset):
 
 
         if phase == "train":
-            filename = os.path.join(dataroot_path, f"{phase}_pairs.txt")
+            filename = os.path.join(self.dataroot, f"{phase}_pairs.txt")
         else:
-            filename = os.path.join(dataroot_path, f"{phase}_pairs.txt")
+            filename = os.path.join(self.dataroot, f"{phase}_pairs.txt")
 
         with open(filename, "r") as f:
             for line in f.readlines():
@@ -204,6 +202,7 @@ def main():
     accelerator = Accelerator(
         mixed_precision=args.mixed_precision,
         project_config=accelerator_project_config,
+        device_placement="auto",
     )
     if accelerator.is_local_main_process:
         transformers.utils.logging.set_verbosity_warning()
