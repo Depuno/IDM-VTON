@@ -244,7 +244,7 @@ def main():
         subfolder="image_encoder",
         torch_dtype=torch.float16,
     )
-    UNet_Encoder = UNet2DConditionModel_ref.from_pretrained(
+    unet_encoder = UNet2DConditionModel_ref.from_pretrained(
         args.pretrained_model_name_or_path,
         subfolder="unet_encoder",
         torch_dtype=torch.float16,
@@ -277,12 +277,12 @@ def main():
     unet.requires_grad_(False)
     vae.requires_grad_(False)
     image_encoder.requires_grad_(False)
-    UNet_Encoder.requires_grad_(False)
+    unet_encoder.requires_grad_(False)
     text_encoder_one.requires_grad_(False)
     text_encoder_two.requires_grad_(False)
-    UNet_Encoder.to(accelerator.device, weight_dtype)
+    unet_encoder.to(accelerator.device, weight_dtype)
     unet.eval()
-    UNet_Encoder.eval()
+    unet_encoder.eval()
 
     
     
@@ -323,9 +323,9 @@ def main():
             tokenizer_2 = tokenizer_two,
             scheduler = noise_scheduler,
             image_encoder=image_encoder,
+            unet_encoder = unet_encoder,
             torch_dtype=torch.float16,
     ).to(accelerator.device)
-    pipe.unet_encoder = UNet_Encoder
 
     # pipe.enable_sequential_cpu_offload()
     # pipe.enable_model_cpu_offload()
